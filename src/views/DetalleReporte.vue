@@ -1,87 +1,90 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { authStore } from '../services/authStore'
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute } from "vue-router";
+import { authStore } from "../services/authStore";
 import {
   obtenerReporte,
   listarHistorial,
   cambiarEstadoReporte,
-} from '../services/reportesService'
+} from "../services/reportesService";
 import {
   ETIQUETAS_ESTADO,
   ETIQUETAS_PRIORIDAD,
   ESTADOS,
   plazoDias,
   formatearFechaHora,
-} from '../services/reglas'
+} from "../services/reglas";
 
-const route = useRoute()
+const route = useRoute();
 
-const reporte = ref(null)
-const historial = ref([])
-const cargando = ref(true)
-const error = ref('')
-const errorGestion = ref('')
-const exito = ref('')
-const guardando = ref(false)
+const reporte = ref(null);
+const historial = ref([]);
+const cargando = ref(true);
+const error = ref("");
+const errorGestion = ref("");
+const exito = ref("");
+const guardando = ref(false);
 
-const nuevoEstado = ref('')
-const comentario = ref('')
+const nuevoEstado = ref("");
+const comentario = ref("");
+const demoroMateriales = ref(false);
+const calificacion = ref(null);
 
-const rol = computed(() => authStore.state.perfil?.rol)
+const rol = computed(() => authStore.state.perfil?.rol);
 const puedeCambiarEstado = computed(() =>
-  ['tecnico', 'administrador'].includes(rol.value),
-)
+  ["tecnico", "administrador"].includes(rol.value),
+);
 
 const abierto = computed(
   () =>
     reporte.value &&
-    reporte.value.estado !== 'resuelto' &&
-    reporte.value.estado !== 'cancelado',
-)
+    reporte.value.estado !== "resuelto" &&
+    reporte.value.estado !== "cancelado",
+);
 
 const diasAbierto = computed(() => {
-  if (!abierto.value) return null
-  const dias = (Date.now() - new Date(reporte.value.created_at)) / 86400000
-  return Math.max(0, Math.floor(dias))
-})
+  if (!abierto.value) return null;
+  const dias = (Date.now() - new Date(reporte.value.created_at)) / 86400000;
+  return Math.max(0, Math.floor(dias));
+});
 
 const vencido = computed(
-  () =>
-    abierto.value &&
-    diasAbierto.value > plazoDias(reporte.value.prioridad),
-)
+  () => abierto.value && diasAbierto.value > plazoDias(reporte.value.prioridad),
+);
 
 const sinCambios = computed(
   () => Boolean(reporte.value) && nuevoEstado.value === reporte.value.estado,
-)
+);
 
 async function cargar() {
-  cargando.value = true
-  error.value = ''
+  cargando.value = true;
+  error.value = "";
   try {
-    reporte.value = await obtenerReporte(route.params.id)
-    historial.value = await listarHistorial(route.params.id)
-    nuevoEstado.value = reporte.value.estado
+    reporte.value = await obtenerReporte(route.params.id);
+    historial.value = await listarHistorial(route.params.id);
+    nuevoEstado.value = reporte.value.estado;
   } catch (e) {
-    error.value = 'No se pudo cargar el reporte: ' + e.message
+    error.value = "No se pudo cargar el reporte: " + e.message;
   } finally {
-    cargando.value = false
+    cargando.value = false;
   }
 }
 
-onMounted(cargar)
+onMounted(cargar);
 
 watch(nuevoEstado, () => {
-  errorGestion.value = ''
-  exito.value = ''
-})
+  errorGestion.value = "";
+  exito.value = "";
+  demoroMateriales.value = false;
+  const sel = document.querySelector("#calificacion");
+  if (sel) sel.value = "";
+});
 
 async function guardarCambioEstado() {
-  if (sinCambios.value) return
-  guardando.value = true
-  errorGestion.value = ''
-  exito.value = ''
+  if (sinCambios.value) return;
+  guardando.value = true;
+  errorGestion.value = "";
+  exito.value = "";
   try {
     await cambiarEstadoReporte({
       reporteId: reporte.value.id,
@@ -90,18 +93,28 @@ async function guardarCambioEstado() {
       comentario: comentario.value.trim() || null,
 
       tecnicoId:
-        rol.value === 'tecnico' && !reporte.value.tecnico
+        rol.value === "tecnico" && !reporte.value.tecnico
           ? authStore.state.user.id
           : undefined,
-    })
-    comentario.value = ''
-    await cargar()
-    nuevoEstado.value = reporte.value.estado
-    exito.value = 'Estado actualizado y registrado en el historial.'
+      demoroMateriales:
+        nuevoEstado.value === "resuelto"
+          ? !!document.querySelector('input[type="checkbox"]')?.checked
+          : null,
+      calificacion:
+        nuevoEstado.value === "resuelto"
+          ? Number(document.querySelector("#calificacion")?.value) || null
+          : null,
+    });
+    comentario.value = "";
+    demoroMateriales.value = false;
+    calificacion.value = null;
+    await cargar();
+    nuevoEstado.value = reporte.value.estado;
+    exito.value = "Estado actualizado y registrado en el historial.";
   } catch (e) {
-    errorGestion.value = 'No se pudo actualizar el estado: ' + e.message
+    errorGestion.value = "No se pudo actualizar el estado: " + e.message;
   } finally {
-    guardando.value = false
+    guardando.value = false;
   }
 }
 </script>
@@ -109,13 +122,20 @@ async function guardarCambioEstado() {
 <template>
   <div>
     <div v-if="cargando">
-      <div class="skeleton" style="height: 2.5rem; width: 40%; margin-bottom: 1rem"></div>
+      <div
+        class="skeleton"
+        style="height: 2.5rem; width: 40%; margin-bottom: 1rem"
+      ></div>
       <div class="skeleton skeleton--chart"></div>
     </div>
 
     <div v-else-if="error" class="alert error" role="alert">
       {{ error }}
-      <RouterLink to="/reportes" class="btn btn--ghost btn--sm" style="margin-left: 0.5rem">
+      <RouterLink
+        to="/reportes"
+        class="btn btn--ghost btn--sm"
+        style="margin-left: 0.5rem"
+      >
         Volver a reportes
       </RouterLink>
     </div>
@@ -157,7 +177,11 @@ async function guardarCambioEstado() {
               <span class="hint">{{ historial.length }} movimientos</span>
             </header>
 
-            <p v-if="historial.length === 0" class="empty" style="padding: 1rem">
+            <p
+              v-if="historial.length === 0"
+              class="empty"
+              style="padding: 1rem"
+            >
               Todavía no hay movimientos registrados.
             </p>
 
@@ -171,7 +195,7 @@ async function guardarCambioEstado() {
                 <div class="timeline__meta">
                   <span>{{ formatearFechaHora(movimiento.created_at) }}</span>
                   <span aria-hidden="true">·</span>
-                  <span>{{ movimiento.autor?.nombre || 'Sistema' }}</span>
+                  <span>{{ movimiento.autor?.nombre || "Sistema" }}</span>
                 </div>
                 <p class="timeline__title">
                   {{ ETIQUETAS_ESTADO[movimiento.estado_nuevo] }}
@@ -188,7 +212,9 @@ async function guardarCambioEstado() {
           <section v-if="puedeCambiarEstado" class="card">
             <h2>Gestión</h2>
 
-            <div v-if="exito" class="alert success" role="status">{{ exito }}</div>
+            <div v-if="exito" class="alert success" role="status">
+              {{ exito }}
+            </div>
             <div v-if="errorGestion" class="alert error" role="alert">
               {{ errorGestion }}
             </div>
@@ -210,14 +236,40 @@ async function guardarCambioEstado() {
                 rows="3"
                 placeholder="Qué se hizo o qué falta"
               ></textarea>
-              <span class="hint">Queda registrado en el historial del reporte.</span>
+              <span class="hint"
+                >Queda registrado en el historial del reporte.</span
+              >
+            </div>
+
+            <div
+              v-if="nuevoEstado === 'resuelto'"
+              class="field"
+            >
+              <label>
+                <input
+                  v-model="demoroMateriales"
+                  type="checkbox"
+                />
+                Demoró por falta de materiales
+              </label>
+            </div>
+
+            <div
+              v-if="nuevoEstado === 'resuelto'"
+              class="field"
+            >
+              <label for="calificacion">Calificación del arreglo (1 a 5)</label>
+              <select id="calificacion">
+                <option :value="null">Sin calificar</option>
+                <option v-for="n in 5" :key="n" :value="n">{{ n }}</option>
+              </select>
             </div>
 
             <button
               :disabled="guardando || sinCambios"
               @click="guardarCambioEstado"
             >
-              {{ guardando ? 'Guardando...' : 'Guardar cambio' }}
+              {{ guardando ? "Guardando..." : "Guardar cambio" }}
             </button>
 
             <p v-if="sinCambios" class="hint" style="margin-bottom: 0">
@@ -241,10 +293,10 @@ async function guardarCambioEstado() {
               </dd>
 
               <dt>Reportó</dt>
-              <dd>{{ reporte.autor?.nombre || '—' }}</dd>
+              <dd>{{ reporte.autor?.nombre || "—" }}</dd>
 
               <dt>Técnico</dt>
-              <dd>{{ reporte.tecnico?.nombre || 'Sin asignar' }}</dd>
+              <dd>{{ reporte.tecnico?.nombre || "Sin asignar" }}</dd>
 
               <dt>Creado</dt>
               <dd>{{ formatearFechaHora(reporte.created_at) }}</dd>

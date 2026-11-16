@@ -27,6 +27,8 @@ create table if not exists reportes (
     check (estado in ('pendiente', 'en_revision', 'resuelto', 'cancelado')),
   prioridad text not null default 'normal'
     check (prioridad in ('baja', 'normal', 'urgente')),
+  demoro_materiales boolean not null default false,
+  calificacion smallint check (calificacion between 1 and 5),
   created_at timestamptz not null default now(),
   resuelto_at timestamptz,
   updated_at timestamptz not null default now()
@@ -273,3 +275,61 @@ from (
 where r.id = h.reporte_id
   and r.estado = 'resuelto'
   and r.resuelto_at is null;
+
+-- Restricción de columnas actualizables en reportes (consigna 9)
+create or replace function proteger_columnas_reporte()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if rol_actual() <> 'administrador' then
+    if new.titulo is distinct from old.titulo
+       or new.descripcion is distinct from old.descripcion
+       or new.ubicacion_id is distinct from old.ubicacion_id
+       or new.categoria_id is distinct from old.categoria_id
+       or new.autor_id is distinct from old.autor_id
+       or new.prioridad is distinct from old.prioridad
+       or new.created_at is distinct from old.created_at
+       or new.resuelto_at is distinct from old.resuelto_at then
+      raise exception 'No tenés permiso para modificar esos campos del reporte.';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_proteger_columnas_reporte on reportes;
+create trigger trg_proteger_columnas_reporte
+  before update on reportes
+  for each row execute function proteger_columnas_reporte();
+
+-- Actualización atómica de estado + historial (consigna 9)
+create or replace function actualizar_estado_reporte(
+  p_reporte_id bigint,
+  p_estado_nuevo text,
+  p_comentario text default null,
+  p_tecnico_id uuid default null,
+  p_demoro_materiales boolean default null,
+  p_calificacion smallint default null
+)
+returns void
+language plpgsql
+security invoker
+set search_path = public
+as $$
+begin
+  update reportes
+  set estado = p_estado_nuevo,
+      tecnico_id = coalesce(tecnico_id, p_tecnico_id),
+      demoro_materiales = coalesce(p_demoro_materiales, demoro_materiales),
+      calificacion = coalesce(p_calificacion, calificacion)
+  where id = p_reporte_id;
+
+  insert into historial_estados (reporte_id, estado_nuevo, autor_id, comentario)
+  values (p_reporte_id, p_estado_nuevo, auth.uid(), p_comentario);
+end;
+$$;
+
+grant execute on function actualizar_estado_reporte(bigint, text, text, uuid, boolean, smallint) to authenticated;

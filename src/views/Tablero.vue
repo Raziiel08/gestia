@@ -16,8 +16,11 @@ import GraficoApilado from "../components/GraficoApilado.vue";
 const METAS = Object.freeze({
   resueltos: 80,
   enPlazo: 90,
-  tiempo: 5,
+  tiempo: 7,
   backlog: 10,
+  kpi1: 80,
+  kpi2: 80,
+  kpi4: 90,
 });
 
 const periodo = ref("ultimos_30");
@@ -43,6 +46,18 @@ const valorTiempo = computed(() => {
   const valor = metricas.value?.tiempoPromedioDias;
   return valor === null || valor === undefined ? null : formatearNumero(valor);
 });
+const valorKpi4 = computed(() => {
+  const valor = metricas.value?.pctKpi4;
+  return valor === null || valor === undefined ? null : formatearNumero(valor);
+});
+const valorKpi1 = computed(() => {
+  const valor = metricas.value?.pctKpi1;
+  return valor === null || valor === undefined ? null : formatearNumero(valor);
+});
+const valorKpi2 = computed(() => {
+  const valor = metricas.value?.pctKpi2;
+  return valor === null || valor === undefined ? null : formatearNumero(valor);
+});
 
 const detalleTiempo = computed(() => {
   const m = metricas.value;
@@ -58,12 +73,16 @@ const detalleBacklog = computed(() => {
 
 function estadoPorcentaje(valor, meta) {
   if (valor === null || valor === undefined) return "sin-datos";
-  return valor >= meta ? "ok" : "alerta";
+  if (valor >= meta) return "ok";
+  if (valor >= meta * 0.9) return "en-riesgo";
+  return "alerta";
 }
 
 function estadoTiempo(valor, meta) {
   if (valor === null || valor === undefined) return "sin-datos";
-  return valor <= meta ? "ok" : "alerta";
+  if (valor <= meta) return "ok";
+  if (valor <= meta * 1.1) return "en-riesgo";
+  return "alerta";
 }
 
 async function cargar() {
@@ -125,7 +144,11 @@ onMounted(async () => {
       <div class="field">
         <label for="periodo">Período</label>
         <select id="periodo" v-model="periodo">
-          <option v-for="opcion in PERIODOS" :key="opcion.valor" :value="opcion.valor">
+          <option
+            v-for="opcion in PERIODOS"
+            :key="opcion.valor"
+            :value="opcion.valor"
+          >
             {{ opcion.etiqueta }}
           </option>
         </select>
@@ -165,8 +188,8 @@ onMounted(async () => {
       <div class="card empty-state">
         <strong>No hay reportes en el período seleccionado</strong>
         <p>
-          Probá con otro período u otra ubicación. Los indicadores no se muestran
-          en cero porque no habría datos para calcularlos.
+          Probá con otro período u otra ubicación. Los indicadores no se
+          muestran en cero porque no habría datos para calcularlos.
         </p>
         <button v-if="periodo !== 'todo'" @click="verTodoElHistorial">
           Ver todo el historial
@@ -212,13 +235,53 @@ onMounted(async () => {
           unidad="reportes"
           :meta="`Meta ≤ ${METAS.backlog}`"
           :detalle="detalleBacklog"
-          :estado="metricas.backlog <= METAS.backlog ? 'ok' : 'alerta'"
+          :estado="
+            metricas.backlog <= METAS.backlog
+              ? 'ok'
+              : metricas.backlog <= METAS.backlog * 1.1
+                ? 'en-riesgo'
+                : 'alerta'
+          "
+        />
+
+        <StatCard
+          titulo="Estado actualizado en 48 h"
+          :valor="valorKpi4"
+          unidad="%"
+          :meta="`Meta ≥ ${METAS.kpi4} %`"
+          :detalle="`${metricas.kpi4Base} reportes asignados`"
+          explicacion="No hay reportes asignados en el período, no se puede calcular."
+          :estado="estadoPorcentaje(metricas.pctKpi4, METAS.kpi4)"
+        />
+
+        <StatCard
+          titulo="Sin demora por materiales"
+          :valor="valorKpi1"
+          unidad="%"
+          :meta="`Meta ≥ ${METAS.kpi1} %`"
+          :detalle="`Sobre ${metricas.kpi1Base} reportes resueltos`"
+          explicacion="No hay reportes resueltos en el período, no se puede calcular."
+          :estado="estadoPorcentaje(metricas.pctKpi1, METAS.kpi1)"
+        />
+
+        <StatCard
+          titulo="Arreglos con calificación 4 o 5"
+          :valor="valorKpi2"
+          unidad="%"
+          :meta="`Meta ≥ ${METAS.kpi2} %`"
+          :detalle="`Sobre ${metricas.kpi2Base} calificaciones`"
+          explicacion="No hay calificaciones registradas en el período, no se puede calcular."
+          :estado="estadoPorcentaje(metricas.pctKpi2, METAS.kpi2)"
         />
       </div>
 
       <div v-if="metricas.vencidos > 0" class="alert error" role="status">
         <strong>{{ metricas.vencidos }}</strong>
-        {{ metricas.vencidos === 1 ? "reporte abierto superó" : "reportes abiertos superaron" }}
+        {{
+          metricas.vencidos === 1
+            ? "reporte abierto superó"
+            : "reportes abiertos superaron"
+        }}
         el plazo de su prioridad.
       </div>
 

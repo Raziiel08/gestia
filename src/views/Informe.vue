@@ -23,8 +23,7 @@ const rango = computed(() => rangoDeMes(mes.value));
 const etiquetaPeriodo = computed(() => rango.value.etiqueta);
 
 const textos = computed(
-  () =>
-    INFORME.interpretaciones[mes.value] ?? INFORME.interpretacionPorDefecto,
+  () => INFORME.interpretaciones[mes.value] ?? INFORME.interpretacionPorDefecto,
 );
 
 const valores = computed(() => {
@@ -33,7 +32,9 @@ const valores = computed(() => {
   const topCategoria = m.porCategoria[0];
   const topUbicacion = m.porUbicacion[0];
   const numero = (valor) =>
-    valor === null || valor === undefined ? "sin datos" : formatearNumero(valor);
+    valor === null || valor === undefined
+      ? "sin datos"
+      : formatearNumero(valor);
 
   return {
     periodo: etiquetaPeriodo.value,
@@ -94,7 +95,7 @@ const filasKpi = computed(() => {
     },
     {
       indicador: "Tiempo promedio de resolución",
-      meta: "≤ 5 días",
+      meta: "≤ 7 días",
       resultado:
         m.tiempoPromedioDias === null
           ? "No calculable"
@@ -117,6 +118,27 @@ const filasKpi = computed(() => {
       resultado: String(m.vencidos),
       cumplimiento: m.vencidos === 0 ? "cumple" : "no-cumple",
       base: "Abiertos que superaron el plazo de su prioridad",
+    },
+    {
+      indicador: "Estado actualizado en 48 h",
+      meta: "≥ 90 %",
+      resultado: pct(m.pctKpi4),
+      cumplimiento: estadoCumplimiento(m.pctKpi4, "min", 90),
+      base: `${m.kpi4Base} reportes asignados`,
+    },
+    {
+      indicador: "Sin demora por materiales",
+      meta: "≥ 80 %",
+      resultado: pct(m.pctKpi1),
+      cumplimiento: estadoCumplimiento(m.pctKpi1, "min", 80),
+      base: `${m.kpi1Base} reportes resueltos`,
+    },
+    {
+      indicador: "Arreglos con calificación 4 o 5",
+      meta: "≥ 80 %",
+      resultado: pct(m.pctKpi2),
+      cumplimiento: estadoCumplimiento(m.pctKpi2, "min", 80),
+      base: `${m.kpi2Base} calificaciones`,
     },
   ];
 });
@@ -145,7 +167,6 @@ watch(mes, cargar);
 watch(
   etiquetaPeriodo,
   (valor) => {
-
     document.title = `Informe Gestia ${valor}`;
   },
   { immediate: true },
@@ -160,7 +181,8 @@ onMounted(cargar);
       <div>
         <h1>Informe de seguimiento</h1>
         <p class="page-header__sub">
-          Explica el desempeño del servicio en un período, no la consulta rápida.
+          Explica el desempeño del servicio en un período, no la consulta
+          rápida.
         </p>
       </div>
       <div class="page-header__acciones">
@@ -175,8 +197,8 @@ onMounted(cargar);
     </header>
 
     <p class="no-print nota-impresion">
-      En el diálogo de impresión elegí <strong>Guardar como PDF</strong>. El archivo
-      se nombra con el período del informe.
+      En el diálogo de impresión elegí <strong>Guardar como PDF</strong>. El
+      archivo se nombra con el período del informe.
     </p>
 
     <div v-if="error" class="alert error" role="alert">{{ error }}</div>
@@ -190,9 +212,12 @@ onMounted(cargar);
       <section class="card reporte-portada">
         <p class="reporte-entidad">{{ INFORME.entidad }}</p>
         <h1 class="reporte-titulo">{{ INFORME.titulo }}</h1>
-        <p class="reporte-periodo">Período: <strong>{{ etiquetaPeriodo }}</strong></p>
+        <p class="reporte-periodo">
+          Período: <strong>{{ etiquetaPeriodo }}</strong>
+        </p>
         <p class="reporte-emitido">
-          Emitido el {{ formatearFechaHora(metricas.actualizadoEn) }} · Sistema Gestia
+          Emitido el {{ formatearFechaHora(metricas.actualizadoEn) }} · Sistema
+          Gestia
         </p>
       </section>
 
@@ -218,8 +243,8 @@ onMounted(cargar);
         <h2 class="titulo-seccion">2. Indicadores del período</h2>
         <p v-if="!metricas.hayDatos" class="alerta-vacio">
           No hay reportes registrados en {{ etiquetaPeriodo }}. No se muestran
-          indicadores en cero porque no habría datos para calcularlos; elegí otro
-          período para ver resultados.
+          indicadores en cero porque no habría datos para calcularlos; elegí
+          otro período para ver resultados.
         </p>
         <template v-else>
           <div class="tabla-scroll">
@@ -239,7 +264,10 @@ onMounted(cargar);
                   <td class="num">{{ fila.meta }}</td>
                   <td class="num">{{ fila.resultado }}</td>
                   <td>
-                    <span class="estado-cumplimiento" :class="fila.cumplimiento">
+                    <span
+                      class="estado-cumplimiento"
+                      :class="fila.cumplimiento"
+                    >
                       {{ ETIQUETAS_CUMPLIMIENTO[fila.cumplimiento] }}
                     </span>
                   </td>
@@ -251,7 +279,9 @@ onMounted(cargar);
 
           <h3 class="subtitulo">Metodología de cálculo</h3>
           <ul class="lista">
-            <li v-for="linea in INFORME.metodologia" :key="linea">{{ linea }}</li>
+            <li v-for="linea in INFORME.metodologia" :key="linea">
+              {{ linea }}
+            </li>
           </ul>
         </template>
       </section>
@@ -296,7 +326,10 @@ onMounted(cargar);
                 <td>{{ reporte.categorias?.nombre }}</td>
                 <td>
                   <span class="prioridad-texto" :class="reporte.prioridad">
-                    {{ ETIQUETAS_PRIORIDAD[reporte.prioridad] || reporte.prioridad }}
+                    {{
+                      ETIQUETAS_PRIORIDAD[reporte.prioridad] ||
+                      reporte.prioridad
+                    }}
                   </span>
                 </td>
                 <td>
@@ -321,22 +354,32 @@ onMounted(cargar);
 
         <h3 class="subtitulo">Dificultades</h3>
         <ul class="lista">
-          <li v-for="linea in textos.dificultades" :key="linea">{{ texto(linea) }}</li>
+          <li v-for="linea in textos.dificultades" :key="linea">
+            {{ texto(linea) }}
+          </li>
         </ul>
 
         <h3 class="subtitulo">Patrones observados</h3>
         <ul class="lista">
-          <li v-for="linea in textos.patrones" :key="linea">{{ texto(linea) }}</li>
+          <li v-for="linea in textos.patrones" :key="linea">
+            {{ texto(linea) }}
+          </li>
         </ul>
 
         <h3 class="subtitulo">Conclusiones que necesitan más información</h3>
         <ul class="lista">
-          <li v-for="linea in textos.pendientes" :key="linea">{{ texto(linea) }}</li>
+          <li v-for="linea in textos.pendientes" :key="linea">
+            {{ texto(linea) }}
+          </li>
         </ul>
 
         <h3 class="subtitulo">Acciones de mejora propuestas</h3>
         <ol class="acciones">
-          <li v-for="accion in textos.acciones" :key="accion.titulo" class="accion">
+          <li
+            v-for="accion in textos.acciones"
+            :key="accion.titulo"
+            class="accion"
+          >
             <p class="accion__titulo">{{ accion.titulo }}</p>
             <p class="accion__detalle">{{ texto(accion.fundamento) }}</p>
             <p class="accion__meta">
@@ -352,12 +395,14 @@ onMounted(cargar);
           {{ etiquetaPeriodo }}.
         </p>
         <p>
-          Documento generado el {{ formatearFechaHora(metricas.actualizadoEn) }}.
-          Puede consultarse desde el sistema y archivarse como PDF.
+          Documento generado el
+          {{ formatearFechaHora(metricas.actualizadoEn) }}. Puede consultarse
+          desde el sistema y archivarse como PDF.
         </p>
         <p class="solo-impresion">
           Copia impresa del sistema Gestia correspondiente al período
-          {{ etiquetaPeriodo }}. No reemplaza el registro original de cada reporte.
+          {{ etiquetaPeriodo }}. No reemplaza el registro original de cada
+          reporte.
         </p>
       </footer>
     </template>
@@ -365,6 +410,31 @@ onMounted(cargar);
 </template>
 
 <style scoped>
+.page-header__acciones {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.campo-mes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0;
+  width: 170px;
+}
+
+.campo-mes label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.campo-mes input {
+  margin: 0;
+}
 .informe {
   max-width: 860px;
   margin: 0 auto;
@@ -457,18 +527,30 @@ onMounted(cargar);
   white-space: nowrap;
 }
 
-.estado-cumplimiento.cumple { background: #15803d; }
-.estado-cumplimiento.no-cumple { background: #b91c1c; }
-.estado-cumplimiento.sin-dato { background: #4b5563; }
+.estado-cumplimiento.cumple {
+  background: #15803d;
+}
+.estado-cumplimiento.no-cumple {
+  background: #b91c1c;
+}
+.estado-cumplimiento.sin-dato {
+  background: #4b5563;
+}
 
 .prioridad-texto {
   font-size: 0.82rem;
   font-weight: 600;
 }
 
-.prioridad-texto.urgente { color: #b91c1c; }
-.prioridad-texto.normal { color: #1d4ed8; }
-.prioridad-texto.baja { color: var(--color-text-muted); }
+.prioridad-texto.urgente {
+  color: #b91c1c;
+}
+.prioridad-texto.normal {
+  color: #1d4ed8;
+}
+.prioridad-texto.baja {
+  color: var(--color-text-muted);
+}
 
 .lista {
   margin: 0;

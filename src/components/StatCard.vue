@@ -16,7 +16,7 @@ const props = defineProps({
     type: String,
     default: "neutral",
     validator: (valor) =>
-      ["ok", "alerta", "sin-datos", "neutral"].includes(valor),
+      ["ok", "en-riesgo", "alerta", "sin-datos", "neutral"].includes(valor),
   },
 });
 
@@ -31,7 +31,8 @@ const calculable = computed(
 
     <p class="stat-card__valor">
       <template v-if="calculable">
-        {{ valor }}<span v-if="unidad" class="stat-card__unidad">{{ unidad }}</span>
+        {{ valor
+        }}<span v-if="unidad" class="stat-card__unidad">{{ unidad }}</span>
       </template>
       <span v-else class="stat-card__sin-dato">No calculable</span>
     </p>
@@ -58,9 +59,18 @@ const calculable = computed(
   gap: 0.3rem;
 }
 
-.stat-card.ok { border-top-color: var(--color-resolved); }
-.stat-card.alerta { border-top-color: var(--color-pending); }
-.stat-card.sin-datos { border-top-color: var(--color-cancelled); }
+.stat-card.ok {
+  border-top-color: var(--color-resolved);
+}
+.stat-card.alerta {
+  border-top-color: var(--color-pending);
+}
+.stat-card.en-riesgo {
+  border-top-color: #ca8a04;
+}
+.stat-card.sin-datos {
+  border-top-color: var(--color-cancelled);
+}
 
 .stat-card__titulo {
   margin: 0;

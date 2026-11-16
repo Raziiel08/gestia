@@ -6,6 +6,7 @@ export async function listarReportes(filtros = {}) {
     .select(
       `
       id, titulo, descripcion, estado, prioridad, created_at,
+      demoro_materiales, calificacion,
       ubicaciones ( id, nombre ),
       categorias ( id, nombre ),
       autor:perfiles!reportes_autor_id_fkey ( id, nombre ),
@@ -23,9 +24,12 @@ export async function listarReportes(filtros = {}) {
   if (filtros.soloMios && filtros.userId)
     query = query.eq("autor_id", filtros.userId);
   if (filtros.busqueda) {
-    query = query.or(
-      `titulo.ilike.%${filtros.busqueda}%,descripcion.ilike.%${filtros.busqueda}%`,
-    );
+    const saneada = filtros.busqueda.replace(/[(),]/g, ' ').trim();
+    if (saneada) {
+      query = query.or(
+        `titulo.ilike.%${saneada}%,descripcion.ilike.%${saneada}%`,
+      );
+    }
   }
 
   const { data, error } = await query;
@@ -39,6 +43,7 @@ export async function obtenerReporte(id) {
     .select(
       `
       id, titulo, descripcion, estado, prioridad, created_at, resuelto_at,
+      demoro_materiales, calificacion,
       ubicaciones ( id, nombre ),
       categorias ( id, nombre ),
       autor:perfiles!reportes_autor_id_fkey ( id, nombre ),
@@ -90,17 +95,18 @@ export async function cambiarEstadoReporte({
   userId,
   comentario,
   tecnicoId,
+  demoroMateriales = null,
+  calificacion = null,
 }) {
-  const update = { estado: estadoNuevo };
-  if (tecnicoId) update.tecnico_id = tecnicoId;
-
-  const { error: updateError } = await supabase
-    .from("reportes")
-    .update(update)
-    .eq("id", reporteId);
-  if (updateError) throw updateError;
-
-  await agregarHistorial({ reporteId, estadoNuevo, userId, comentario });
+  const { error } = await supabase.rpc("actualizar_estado_reporte", {
+    p_reporte_id: reporteId,
+    p_estado_nuevo: estadoNuevo,
+    p_comentario: comentario || null,
+    p_tecnico_id: tecnicoId || null,
+    p_demoro_materiales: demoroMateriales,
+    p_calificacion: calificacion,
+  });
+  if (error) throw error;
 }
 
 export async function agregarHistorial({

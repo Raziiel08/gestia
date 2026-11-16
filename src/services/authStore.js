@@ -28,10 +28,10 @@ async function inicializar() {
   if (state.user) await cargarPerfil(state.user.id);
   state.cargando = false;
 
-  supabase.auth.onAuthStateChange(async (_event, session) => {
+  supabase.auth.onAuthStateChange((_event, session) => {
     state.user = session?.user ?? null;
     if (state.user) {
-      await cargarPerfil(state.user.id);
+      cargarPerfil(state.user.id);
     } else {
       state.perfil = null;
     }

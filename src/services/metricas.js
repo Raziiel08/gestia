@@ -40,6 +40,7 @@ function etiquetaMes(clave) {
 export function calcularMetricas(
   reportes,
   { desde = null, hasta = null, ubicacionId = null, categoriaId = null } = {},
+  historial = [],
 ) {
   const lista = reportes ?? [];
   const total = lista.length;
@@ -87,6 +88,44 @@ export function calcularMetricas(
       diasEntre(reporte.created_at, ahora) > plazoDias(reporte.prioridad),
   ).length;
 
+  const historialPorReporte = new Map();
+  for (const h of historial || []) {
+    if (!historialPorReporte.has(h.reporte_id)) historialPorReporte.set(h.reporte_id, []);
+    historialPorReporte.get(h.reporte_id).push(h);
+  }
+
+  let asignadosKpi4 = 0;
+  let actualizadosEn48h = 0;
+  for (const reporte of lista) {
+    const entries = historialPorReporte.get(reporte.id) || [];
+    if (entries.length <= 1) continue;
+    asignadosKpi4++;
+    const primerCambio = new Date(entries[1].created_at);
+    const creacion = new Date(reporte.created_at);
+    const horas = (primerCambio - creacion) / (1000 * 60 * 60);
+    if (horas >= 0 && horas <= 48) actualizadosEn48h++;
+  }
+
+  const pctKpi4 =
+    asignadosKpi4 > 0
+      ? redondear((actualizadosEn48h / asignadosKpi4) * 100)
+      : null;
+
+  // KPI 1: sin demora por materiales (de los resueltos, los que no demoraron por falta de materiales)
+  const resueltosLista = lista.filter((r) => r.estado === "resuelto");
+  const resueltosSinDemora = resueltosLista.filter((r) => !r.demoro_materiales).length;
+  const pctKpi1 =
+    resueltosLista.length > 0
+      ? redondear((resueltosSinDemora / resueltosLista.length) * 100)
+      : null;
+
+  // KPI 2: arreglos con calificación 4 o 5
+  const conCalificacion = lista.filter((r) => r.calificacion != null);
+  const conCalificacionAlta = conCalificacion.filter((r) => r.calificacion >= 4).length;
+  const pctKpi2 =
+    conCalificacion.length > 0
+      ? redondear((conCalificacionAlta / conCalificacion.length) * 100)
+      : null;
   const meses = new Map();
   const asegurarMes = (clave) => {
     if (!meses.has(clave)) {
@@ -162,6 +201,12 @@ export function calcularMetricas(
     resueltos,
     backlog,
     vencidos,
+    pctKpi1,
+    kpi1Base: resueltosLista.length,
+    pctKpi2,
+    kpi2Base: conCalificacion.length,
+    pctKpi4,
+    kpi4Base: asignadosKpi4,
     reportes: reportesOrdenados,
 
     pctResueltos: porcentaje(resueltos, totalValidos),

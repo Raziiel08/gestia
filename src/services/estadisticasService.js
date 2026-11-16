@@ -4,6 +4,7 @@ import { calcularMetricas } from "./metricas.js";
 
 const CAMPOS_REPORTE = `
   id, titulo, estado, prioridad, created_at, resuelto_at,
+  demoro_materiales, calificacion,
   ubicacion_id, categoria_id,
   ubicaciones ( id, nombre ),
   categorias ( id, nombre )
@@ -40,5 +41,17 @@ export async function obtenerMetricas(
   });
   if (error) throw error;
 
-  return calcularMetricas(data, { desde, hasta, ubicacionId, categoriaId });
+  const reporteIds = (data || []).map((r) => r.id);
+  let historial = [];
+  if (reporteIds.length) {
+    const { data: histData, error: histError } = await supabase
+      .from("historial_estados")
+      .select("reporte_id, estado_nuevo, created_at")
+      .in("reporte_id", reporteIds)
+      .order("created_at", { ascending: true });
+    if (histError) throw histError;
+    historial = histData || [];
+  }
+
+  return calcularMetricas(data, { desde, hasta, ubicacionId, categoriaId }, historial);
 }
