@@ -57,7 +57,7 @@ El tablero y el informe usan los mismos indicadores:
 | --- | --- |
 | Reportes resueltos | ≥ 80 % |
 | Resueltos en plazo | ≥ 90 % |
-| Tiempo promedio de resolución | ≤ 5 días |
+| Tiempo promedio de resolución | ≤ 7 días |
 | Reportes abiertos | ≤ 10 |
 | Reportes vencidos | 0 |
 
@@ -83,5 +83,4 @@ de un cero.
 ## Estructura
 
 - `src/`: componentes, servicios, vistas y estilos.
-- `supabase/`: esquema, políticas y datos iniciales.
-- `entrega/`: presentación y documentos generados para el proyecto.
+- `supabase/`: base de datos.
