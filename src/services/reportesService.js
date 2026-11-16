@@ -24,7 +24,7 @@ export async function listarReportes(filtros = {}) {
   if (filtros.soloMios && filtros.userId)
     query = query.eq("autor_id", filtros.userId);
   if (filtros.busqueda) {
-    const saneada = filtros.busqueda.replace(/[(),]/g, ' ').trim();
+    const saneada = filtros.busqueda.replace(/[(),]/g, " ").trim();
     if (saneada) {
       query = query.or(
         `titulo.ilike.%${saneada}%,descripcion.ilike.%${saneada}%`,

@@ -77,6 +77,9 @@ export function formatearNumero(valor) {
 
 export function formatearPeriodo({ desde, hasta } = {}) {
   if (!desde && !hasta) return "Todo el historial";
-  if (desde && hasta) return `${formatearFecha(desde)} al ${formatearFecha(hasta)}`;
-  return desde ? `Desde ${formatearFecha(desde)}` : `Hasta ${formatearFecha(hasta)}`;
+  if (desde && hasta)
+    return `${formatearFecha(desde)} al ${formatearFecha(hasta)}`;
+  return desde
+    ? `Desde ${formatearFecha(desde)}`
+    : `Hasta ${formatearFecha(hasta)}`;
 }

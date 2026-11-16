@@ -40,12 +40,20 @@ export function resolverPeriodo(valor, referencia = new Date()) {
     case "ultimos_30": {
       const desde = new Date(hoy);
       desde.setDate(desde.getDate() - 29);
-      return { desde: aIso(desde), hasta: aIso(hoy), etiqueta: "Últimos 30 días" };
+      return {
+        desde: aIso(desde),
+        hasta: aIso(hoy),
+        etiqueta: "Últimos 30 días",
+      };
     }
     case "ultimos_90": {
       const desde = new Date(hoy);
       desde.setDate(desde.getDate() - 89);
-      return { desde: aIso(desde), hasta: aIso(hoy), etiqueta: "Últimos 90 días" };
+      return {
+        desde: aIso(desde),
+        hasta: aIso(hoy),
+        etiqueta: "Últimos 90 días",
+      };
     }
     case "anio_actual":
       return {

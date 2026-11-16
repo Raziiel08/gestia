@@ -66,10 +66,7 @@ async function cerrarSesion() {
 }
 
 const MENSAJES_AUTH = [
-  [
-    "Invalid login credentials",
-    "El email o la clave no son correctos.",
-  ],
+  ["Invalid login credentials", "El email o la clave no son correctos."],
   [
     "Email not confirmed",
     "Tenés que confirmar el correo antes de ingresar. Revisá tu bandeja de entrada.",
@@ -78,10 +75,7 @@ const MENSAJES_AUTH = [
     "User already registered",
     "Ya existe una cuenta con ese email. Probá iniciar sesión.",
   ],
-  [
-    "Password should be at least",
-    "La clave debe tener al menos 6 caracteres.",
-  ],
+  ["Password should be at least", "La clave debe tener al menos 6 caracteres."],
   [
     "Email rate limit exceeded",
     "Se enviaron demasiados correos en poco tiempo. Esperá unos minutos y volvé a intentar.",

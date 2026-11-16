@@ -1177,3 +1177,91 @@ th.num {
     max-width: none !important;
   }
 }
+.mini-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.mini-stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.45rem;
+  padding: 1.15rem 1.35rem;
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 14px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+a.mini-stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.07);
+  border-color: #cbd5e1;
+}
+
+.mini-stat__label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #64748b);
+}
+
+.mini-stat__value {
+  display: block;
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--color-text, #0f172a);
+  margin: 0.15rem 0;
+}
+
+.mini-stat__hint {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--color-text-muted, #64748b);
+  padding-top: 0.55rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.password-input {
+  position: relative;
+}
+
+.password-input input {
+  padding-right: 2.8rem;
+}
+
+button.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  padding: 0.3rem;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+button.password-toggle:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.password-toggle svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}

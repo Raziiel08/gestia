@@ -22,9 +22,12 @@ function finDelDia(valor) {
   return fecha;
 }
 
-export async function obtenerMetricas(
-  { desde = null, hasta = null, ubicacionId = null, categoriaId = null } = {},
-) {
+export async function obtenerMetricas({
+  desde = null,
+  hasta = null,
+  ubicacionId = null,
+  categoriaId = null,
+} = {}) {
   let consulta = supabase.from("reportes").select(CAMPOS_REPORTE);
 
   if (desde) {
@@ -53,5 +56,9 @@ export async function obtenerMetricas(
     historial = histData || [];
   }
 
-  return calcularMetricas(data, { desde, hasta, ubicacionId, categoriaId }, historial);
+  return calcularMetricas(
+    data,
+    { desde, hasta, ubicacionId, categoriaId },
+    historial,
+  );
 }

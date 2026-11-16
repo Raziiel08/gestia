@@ -276,7 +276,6 @@ where r.id = h.reporte_id
   and r.estado = 'resuelto'
   and r.resuelto_at is null;
 
--- Restricción de columnas actualizables en reportes (consigna 9)
 create or replace function proteger_columnas_reporte()
 returns trigger
 language plpgsql
@@ -305,7 +304,6 @@ create trigger trg_proteger_columnas_reporte
   before update on reportes
   for each row execute function proteger_columnas_reporte();
 
--- Actualización atómica de estado + historial (consigna 9)
 create or replace function actualizar_estado_reporte(
   p_reporte_id bigint,
   p_estado_nuevo text,
@@ -333,3 +331,49 @@ end;
 $$;
 
 grant execute on function actualizar_estado_reporte(bigint, text, text, uuid, boolean, smallint) to authenticated;
+
+create or replace function email_permitido_para_registro(p_email text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  correo text := lower(trim(p_email));
+  dominio text := split_part(correo, '@', 2);
+begin
+  if correo !~ '^[a-z0-9._%+-]+@[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}$'
+     or split_part(correo, '@', 1) like '.%'
+     or split_part(correo, '@', 1) like '%.'
+     or split_part(correo, '@', 1) like '%..%' then
+    return false;
+  end if;
+
+  if dominio in ('gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com',
+                 'live.com', 'msn.com', 'icloud.com', 'protonmail.com', 'proton.me') then
+    return true;
+  end if;
+
+  return dominio like '%.edu'
+      or dominio like '%.edu.ar';
+end;
+$$;
+
+create or replace function validar_email_registro()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not email_permitido_para_registro(new.email) then
+    raise exception 'El correo ingresado no está habilitado para registrarse. Probá con otro.';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_validar_email_registro on auth.users;
+create trigger trg_validar_email_registro
+  before insert on auth.users
+  for each row execute function validar_email_registro();

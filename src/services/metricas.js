@@ -111,7 +111,6 @@ export function calcularMetricas(
       ? redondear((actualizadosEn48h / asignadosKpi4) * 100)
       : null;
 
-  // KPI 1: sin demora por materiales (de los resueltos, los que no demoraron por falta de materiales)
   const resueltosLista = lista.filter((r) => r.estado === "resuelto");
   const resueltosSinDemora = resueltosLista.filter((r) => !r.demoro_materiales).length;
   const pctKpi1 =
@@ -119,7 +118,6 @@ export function calcularMetricas(
       ? redondear((resueltosSinDemora / resueltosLista.length) * 100)
       : null;
 
-  // KPI 2: arreglos con calificación 4 o 5
   const conCalificacion = lista.filter((r) => r.calificacion != null);
   const conCalificacionAlta = conCalificacion.filter((r) => r.calificacion >= 4).length;
   const pctKpi2 =
