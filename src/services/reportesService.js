@@ -5,7 +5,7 @@ export async function listarReportes(filtros = {}) {
     .from("reportes")
     .select(
       `
-      id, titulo, descripcion, estado, created_at,
+      id, titulo, descripcion, estado, prioridad, created_at,
       ubicaciones ( id, nombre ),
       categorias ( id, nombre ),
       autor:perfiles!reportes_autor_id_fkey ( id, nombre ),
@@ -15,6 +15,7 @@ export async function listarReportes(filtros = {}) {
     .order("created_at", { ascending: false });
 
   if (filtros.estado) query = query.eq("estado", filtros.estado);
+  if (filtros.prioridad) query = query.eq("prioridad", filtros.prioridad);
   if (filtros.ubicacionId)
     query = query.eq("ubicacion_id", filtros.ubicacionId);
   if (filtros.categoriaId)
@@ -37,7 +38,7 @@ export async function obtenerReporte(id) {
     .from("reportes")
     .select(
       `
-      id, titulo, descripcion, estado, created_at,
+      id, titulo, descripcion, estado, prioridad, created_at, resuelto_at,
       ubicaciones ( id, nombre ),
       categorias ( id, nombre ),
       autor:perfiles!reportes_autor_id_fkey ( id, nombre ),
@@ -56,6 +57,7 @@ export async function crearReporte({
   ubicacionId,
   categoriaId,
   autorId,
+  prioridad = "normal",
 }) {
   const { data, error } = await supabase
     .from("reportes")
@@ -66,6 +68,7 @@ export async function crearReporte({
       categoria_id: categoriaId,
       autor_id: autorId,
       estado: "pendiente",
+      prioridad,
     })
     .select()
     .single();
@@ -143,33 +146,4 @@ export async function listarCategorias() {
     .order("nombre");
   if (error) throw error;
   return data;
-}
-
-export async function obtenerEstadisticas() {
-  const { data, error } = await supabase
-    .from("reportes")
-    .select("estado, created_at, historial_estados(estado_nuevo, created_at)");
-  if (error) throw error;
-
-  const total = data.length;
-  const resueltos = data.filter((r) => r.estado === "resuelto").length;
-
-  const tiempos = data
-    .filter((r) => r.estado === "resuelto")
-    .map((r) => {
-      const cierre = r.historial_estados
-        ?.filter((h) => h.estado_nuevo === "resuelto")
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
-      if (!cierre) return null;
-      const dias =
-        (new Date(cierre.created_at) - new Date(r.created_at)) / 86400000;
-      return dias;
-    })
-    .filter((d) => d !== null);
-
-  const promedio = tiempos.length
-    ? (tiempos.reduce((a, b) => a + b, 0) / tiempos.length).toFixed(1)
-    : null;
-
-  return { total, resueltos, promedioDias: promedio };
 }

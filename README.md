@@ -1,84 +1,87 @@
-# EST1 - Sistema digital de mantenimiento escolar
+# Gestia
 
-Sistema web para reportar y hacer seguimiento de problemas de
-mantenimiento del colegio.
+Sistema web de mantenimiento escolar. Permite reportar problemas del
+edificio, hacer seguimiento de cada caso y analizar el desempeño del
+servicio con indicadores y un informe de gestión.
 
-## Cómo levantarlo
+## Qué hace
 
-1. `npm install`
-2. `npm run dev`
+- Quien detecta un problema lo reporta con lugar, tipo, prioridad y
+  descripción.
+- El equipo técnico lo toma, cambia el estado y deja un comentario.
+- La dirección consulta indicadores y un informe mensual.
 
-Desde Registrarse se puede crear un usuario de cada rol (estudiante o
-docente, técnico, administrador) para probar los distintos recorridos.
+## Puesta en marcha
 
-## Roles
+1. Instalar dependencias: `npm install`.
+2. Crear `.env` y completar `VITE_SUPABASE_URL` y
+   `VITE_SUPABASE_PUBLISHABLE_KEY`.
+3. En Supabase, ir a SQL Editor y correr el contenido de
+   `supabase/gestia.sql`.
+4. Marcar el primer administrador:
 
-En esta versión el rol se elige al registrarse, para poder simular los
-tres tipos de usuario sin depender de que el colegio los dé de alta. El
-rol activo se muestra en la barra superior. Los permisos no dependen
-solo de ocultar botones: están reforzados con políticas RLS en la base
-de datos, así que aunque alguien edite el cliente no puede, por
-ejemplo, cambiar el estado de un reporte ajeno sin ser técnico o
-administrador.
+   ```sql
+   update perfiles set rol = 'administrador'
+   where id = (select id from auth.users where email = '...');
+   ```
 
-## Por qué necesita backend
+5. Levantar la app: `npm run dev`.
 
-Varias personas tienen que ver y actualizar los mismos reportes desde
-distintos dispositivos, y los permisos por rol tienen que cumplirse de
-verdad y no solo en la interfaz. Con `localStorage` cada navegador
-tendría su propia copia de los datos, sin sincronizar entre
-dispositivos, y cualquiera con acceso a las devtools podría cambiar un
-estado sin que nada lo frene. Para un sistema donde técnico,
-estudiantes/docentes y administrador trabajan sobre los mismos
-registros, esa limitación lo hace inviable como solución final. Lo
-único que queda del lado del cliente es la sesión de autenticación
-(la maneja `supabase-js`), para no tener que volver a loguearse en
-cada visita.
 
-## Eliminar vs cancelar
+## Roles y permisos
 
-Los reportes no se borran. Para sacar uno de circulación se usa el
-estado `cancelado`, y el cambio queda igual en `historial_estados`. El
-borrado real queda para datos sin historial, como una ubicación mal
-cargada, y solo el administrador puede hacerlo.
+| Rol | Puede hacer |
+| --- | --- |
+| Estudiante / Docente | Crear reportes y seguir los propios. |
+| Técnico | Ver todos los reportes, cambiar estados y consultar tablero e informe. |
+| Administrador | Todo lo anterior, reabrir o reactivar reportes y administrar roles. |
+
+Las cuentas nuevas se crean como estudiante / docente. Los demás roles se
+asignan desde Usuarios. Nadie puede cambiar su propio rol.
+
+## Pantallas
+
+- Inicio: resumen de casos.
+- Reportes: búsqueda y filtros.
+- Nuevo reporte: formulario.
+- Detalle: ficha y historial.
+- Tablero: indicadores y gráficos.
+- Informe: seguimiento mensual.
+- Usuarios: administración de roles.
+
+## Indicadores
+
+El tablero y el informe usan los mismos indicadores:
+
+| Indicador | Meta |
+| --- | --- |
+| Reportes resueltos | ≥ 80 % |
+| Resueltos en plazo | ≥ 90 % |
+| Tiempo promedio de resolución | ≤ 5 días |
+| Reportes abiertos | ≤ 10 |
+| Reportes vencidos | 0 |
+
+Plazos por prioridad: urgente 2 días, normal 7 días, baja 15 días.
+
+Si un indicador no puede calcularse, se muestra "No calculable" en lugar
+de un cero.
+
+## Decisiones técnicas
+
+- Se usa Supabase y no localStorage: varios usuarios trabajan sobre los
+  mismos reportes y la seguridad se aplica en el servidor.
+- El tablero y el informe usan una sola consulta filtrada y un cálculo
+  puro. No hay cifras que no cierren.
+
+## Limitaciones
+
+- No se adjuntan fotos.
+- No se registran costos ni conformación del usuario.
+- La asignación de técnico es automática.
+- No hay notificaciones.
 
 ## Estructura
 
-```
-src/
-  views/            Login, Registro, Inicio, Nuevo reporte,
-                     Lista de reportes, Detalle, Estadísticas
-  services/
-    authStore.js        Sesión y perfil del usuario
-    reportesService.js  CRUD de reportes contra Supabase
-  router/index.js     Rutas + guards por sesión y por rol
-  supabase.js          Cliente de Supabase
-supabase/
-  schema.sql           Tablas, relaciones, RLS y datos de prueba
-```
-
-## Esquema de datos
-
-- `perfiles` — extiende `auth.users` con nombre y rol.
-- `ubicaciones` — aulas, baños, patio, pañol, server, taller.
-- `categorias` — tipo de problema (electricidad, plomería, etc.).
-- `reportes` — ubicación, categoría, autor y técnico asignado.
-- `historial_estados` — un registro por cada cambio de estado, con
-  quién lo hizo, cuándo y un comentario. Es append-only: no tiene
-  políticas de update ni delete.
-
-## Seguridad
-
-La clave `anon` de Supabase puede ir en el cliente (vía `.env`, que
-está en `.gitignore`). La clave `service_role` no se usa en ningún
-lado: toda la seguridad se apoya en las políticas RLS de
-`schema.sql`. Las operaciones muestran mensajes de carga, error y
-confirmación.
-
-## Qué falta
-
-- Pantalla de administración para gestionar usuarios y ubicaciones, y
-  para que el administrador asigne reportes a un técnico en particular
-  (hoy el técnico se autoasigna al tomar un reporte).
-- Subida real de fotos (Supabase Storage).
-- Notificaciones cuando cambia el estado de un reporte propio.
+- `src/`: componentes, servicios, vistas y estilos.
+- `supabase/`: esquema, políticas y datos iniciales.
+- `entrega/`: presentación y documentos generados para el proyecto.

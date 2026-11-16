@@ -37,11 +37,24 @@ const routes = [
     props: true,
   },
   {
-    path: "/estadisticas",
-    name: "estadisticas",
-    component: () => import("../views/Estadisticas.vue"),
+    path: "/tablero",
+    name: "tablero",
+    component: () => import("../views/Tablero.vue"),
+    meta: { roles: ["tecnico", "administrador"] },
+  },
+  {
+    path: "/informe",
+    name: "informe",
+    component: () => import("../views/Informe.vue"),
+    meta: { roles: ["tecnico", "administrador"] },
+  },
+  {
+    path: "/usuarios",
+    name: "usuarios",
+    component: () => import("../views/Usuarios.vue"),
     meta: { roles: ["administrador"] },
   },
+  { path: "/:pathMatch(.*)*", redirect: "/inicio" },
 ];
 
 const router = createRouter({
@@ -49,8 +62,19 @@ const router = createRouter({
   routes,
 });
 
+const TITULOS = {
+  inicio: "Inicio",
+  login: "Ingresar",
+  registro: "Crear cuenta",
+  "nuevo-reporte": "Nuevo reporte",
+  "lista-reportes": "Reportes",
+  "detalle-reporte": "Reporte",
+  tablero: "Tablero",
+  usuarios: "Usuarios",
+};
+
 router.beforeEach(async (to) => {
-  // Esperar a que termine de resolverse la sesión antes de decidir.
+
   while (authStore.state.cargando) {
     await new Promise((r) => setTimeout(r, 30));
   }
@@ -66,6 +90,15 @@ router.beforeEach(async (to) => {
     return { name: "inicio" };
   }
   return true;
+});
+
+router.afterEach((to) => {
+
+  if (to.name === "informe") return;
+  const titulo = TITULOS[to.name];
+  document.title = titulo
+    ? `${titulo} · Gestia Mantenimiento`
+    : "Gestia · Mantenimiento escolar";
 });
 
 export default router;

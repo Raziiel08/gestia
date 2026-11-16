@@ -1,5 +1,5 @@
 {
-  "name": "est1-mantenimiento",
+  "name": "gestia-mantenimiento",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
+    "chart.js": "^4.6.1",
     "vue": "^3.4.0",
     "vue-router": "^4.3.0"
   },
